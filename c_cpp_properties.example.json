@@ -4,11 +4,11 @@
       "name": "Linux",
       "includePath": [
         "${workspaceFolder}/**",
-        " /usr/include" //Header path of your system (Use it if you use linux)
-        "${workspaceFolder}/Components/**/Include" // Component header library
+        " /usr/include",
+        "${workspaceFolder}/Components/**/Include"
       ],
       "defines": [],
-      "compilerPath": "/usr/bin/gcc",   // If you use linux
+      "compilerPath": "/usr/bin/gcc",
       "cStandard": "c17",
       "cppStandard": "gnu++17",
       "intelliSenseMode": "linux-gcc-x64"
