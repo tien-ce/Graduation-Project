@@ -34,4 +34,4 @@ endforeach()
 
 
 # 3. Link Libraries
-target_link_libraries(msg PRIVATE msg_pa -lm)
+target_link_libraries(msg PRIVATE msg_pa)
