@@ -2,7 +2,6 @@
 #include <mqueue.h>   // POSIX Message Queue functions
 #include <fcntl.h>    // O_RDONLY, O_WRONLY, O_CREAT
 #include <sys/stat.h> // S_IRUSR, S_IWUSR
-#include <errno.h>    // Standard error definitions
 #include <string.h>   // For strerror (though not strictly necessary for return values)
 #include <stdio.h>    // For optional perror
 
@@ -18,7 +17,6 @@ static void setup_default_attr(struct mq_attr *attr) {
 int msg_write(const char *queue_name, const char *message, size_t msg_len) {
     mqd_t mq;
     int return_code = MSG_SUCCESS;
-
     // Open the queue for writing. It MUST exist already.
     mq = mq_open(queue_name, O_WRONLY);
     if (mq == (mqd_t)-1) {
@@ -100,7 +98,7 @@ int msg_read(const char *queue_name, char *buffer, size_t buffer_size, size_t *r
 }
 
 // --- MSG_CLEANUP Implementation ---
-int msg_cleanup(const char *queue_name) {
+int msg_cleanup(const char *queue_name){
     if (mq_unlink(queue_name) == -1) {
         // If the queue doesn't exist (ENOENT), we might still treat it as success, 
         // but generally, we report the error.
