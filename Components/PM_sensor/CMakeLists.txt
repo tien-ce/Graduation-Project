@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 2.8.10)
 project(pmsensor_library C)
 # Add a shared library target 
-add_library(pmsensor SHARED air_rs485.c)
+add_library(pmsensor SHARED main.c)
 # Set version 
 set_target_properties(pmsensor PROPERTIES
     VERSION 1.0.0
