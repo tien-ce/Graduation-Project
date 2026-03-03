@@ -1,3 +1,22 @@
 .vscode/
 build/
 oe-*
+
+# Ignore Vim temporary and session files
+*~
+*.swp
+*.swo
+*.swn
+# Comprehensive swap file patterns from the global template
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+# Session files
+Session.vim
+Sessionx.vim
+# Auto-generated tag files
+tags
+# Persistent undo files
+[._]*.un~
