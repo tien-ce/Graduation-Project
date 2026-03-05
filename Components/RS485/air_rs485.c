@@ -2,6 +2,19 @@
 #include <stdio.h>
 #include <errno.h>
 
+modbus_t* rs485_init(const char* device, int baud, char parity, int data_bit, int stop_bit) {
+    modbus_t *ctx = modbus_new_rtu(device, baud, parity, data_bit, stop_bit);
+    if (ctx == NULL) {
+        return NULL;
+    }
+    
+    if (modbus_connect(ctx) == -1) {
+        modbus_free(ctx);
+        return NULL;
+    }
+    return ctx;
+}
+
 int rs485_read_raw(modbus_t *ctx, int slave_id, int reg_addr, uint16_t *out_value) {
     if (ctx == NULL) return -1;
 
@@ -34,10 +47,15 @@ int rs485_write_raw(modbus_t *ctx, int slave_id, int reg_addr, uint16_t value) {
 
     // Perform the write operation
     if (modbus_write_register(ctx, reg_addr, value) == -1) {
-        fprintf(stderr, "RS485 WRITE ERROR [ID 0x%02X, Reg 0x%04X]: %s\n", 
+        fprintf(stderr, "RS485 WRIodbus_new_rtTE ERROR [ID 0x%02X, Reg 0x%04X]: %s\n", 
                 slave_id, reg_addr, modbus_strerror(errno));
         return -1;
     }
-
     return 0;
+}
+
+void rs485_close(modbus_t *ctx) {
+    if (ctx != NULL) {
+        modbus_free(ctx);
+    }
 }

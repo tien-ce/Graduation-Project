@@ -3,14 +3,11 @@
 
 #include <stdint.h>
 #include <modbus/modbus.h>
-
-// Sensor Slave IDs (examples)
-#define SLAVE_ID_PM  0x01
-#define SLAVE_ID_CO  0x02
-
-// Register Addresses [cite: 13]
-#define REG_PM25     0x0004
-#define REG_CO       0x0006
+/**
+ * @brief Initializes the Modbus RTU context.
+ * @return Pointer to modbus_t context, or NULL on failure.
+ */
+modbus_t* rs485_init(const char* device, int baud, char parity, int data_bit, int stop_bit);
 
 /**
  * @brief Reads a single raw 16-bit register from a specific slave.
@@ -31,4 +28,10 @@ int rs485_read_raw(modbus_t *ctx, int slave_id, int reg_addr, uint16_t *out_valu
  * @return 0 on success, -1 on failure.
  */
 int rs485_write_raw(modbus_t *ctx, int slave_id, int reg_addr, uint16_t value);
+
+/**
+ * @brief Closes the Modbus context and frees resources.
+ * @param ctx The Modbus context to close.
+ */
+void rs485_close(modbus_t *ctx);
 #endif
