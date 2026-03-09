@@ -23,3 +23,6 @@ tags
 
 # cache
 .cache/
+
+# Clangd
+compile_commands.json

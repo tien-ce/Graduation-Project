@@ -1,8 +1,0 @@
-[
-{
-  "directory": "/data200/Raspberry-pi4/Components/RS485/build",
-  "command": "/usr/bin/aarch64-linux-gnu-gcc --sysroot=/data200/sysroot_RaspOS -Dair_485_EXPORTS -I/data200/Raspberry-pi4/Components/RS485/Include -fPIC -o CMakeFiles/air_485.dir/air_rs485.c.o -c /data200/Raspberry-pi4/Components/RS485/air_rs485.c",
-  "file": "/data200/Raspberry-pi4/Components/RS485/air_rs485.c",
-  "output": "CMakeFiles/air_485.dir/air_rs485.c.o"
-}
-]

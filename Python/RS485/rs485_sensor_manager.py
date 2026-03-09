@@ -1,5 +1,5 @@
-from rs485_wrapper import RS485Wrapper
-from collections import deques
+import rs485_wrapper as RS485Wrapper
+from collections import deque
 
 class SensorDevice:
     def __init__(self, slave_id, register_address, name, unit=""):
@@ -10,8 +10,8 @@ class SensorDevice:
         
         # Private variables for data integrity
         self.__window_size = 5
-        self.__history = deques (maxlen=self.__window_size)  # Store last N values for moving average
-        self.__filtered_history = deques (maxlen=self.__window_size)  # Store last N values for median filtering
+        self.__history = deque (maxlen=self.__window_size)  # Store last N values for moving average
+        self.__filtered_history = deque (maxlen=self.__window_size)  # Store last N values for median filtering
         self.__last_clean_value = 0.0  # Last value that passed integrity checks
         self.__offset = 0.0  # Sensor-specific offset for calibration
 
