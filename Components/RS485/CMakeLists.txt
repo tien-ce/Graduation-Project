@@ -9,6 +9,13 @@ set_target_properties(air_485 PROPERTIES
 )
 #Specify the public include directories for dependent targets
 target_include_directories(air_485 PRIVATE Include)
+# Force the linker to include ALL code from the static archive
+target_link_libraries(air_485
+    PRIVATE
+    -Wl,--whole-archive
+    modbus
+    -Wl,--no-whole-archive
+)
 # Optional: Ensure position-independent code for maximum compatibility across platforms
 set_target_properties(air_485  PROPERTIES POSITION_INDEPENDENT_CODE ON)
 install(TARGETS air_485 DESTINATION ${CMAKE_INSTALL_LIBDIR})
