@@ -1,109 +1,70 @@
 import ctypes
 import os
-from enum import Enum
 
-class RS485Wrapper:
-    def __init__(self, sens_lib_path="/usr/lib/libair_485.so", data_corect_path = "/usr/lib/lib_data_handle.so"):
-        """
-        Initializes the ctypes interface for the RS485 C library.
-        """
-        if not os.path.exists(sens_lib_path):
-            raise FileNotFoundError(f"Shared library not found at {sens_lib_path}")
+# --- Configuration and Initialization ---
+SENS_LIB_PATH = "/usr/lib/libair_485.so"
+DATA_HANDLE_PATH = "/usr/lib/libdatahandle.so"
 
-        self.lib_air = ctypes.CDLL(sens_lib_path)
-        self.lib_data_handle = ctypes.CDLL(data_corect_path)
-        self._declare_signatures()
+# Check if libraries exist [cite: 511, 513]
+if not os.path.exists(SENS_LIB_PATH) or not os.path.exists(DATA_HANDLE_PATH):
+    raise FileNotFoundError("One or more required shared libraries (.so) are missing.")
 
-    def _declare_signatures(self):
-        """
-        Defines argument and return types for the C functions to ensure memory safety.
-        """
-        """
-            Read data function signature:
-        """
-        # 1. Initialize Modbus: modbus_t* rs485_init(const char* device, int baud, char parity, int data_bit, int stop_bit)
-        self.lib_air.rs485_init.argtypes = [
-            ctypes.c_char_p, ctypes.c_int, ctypes.c_char, ctypes.c_int, ctypes.c_int
-        ]
-        self.lib_air.rs485_init.restype = ctypes.c_void_p  # Returns the modbus_t pointer
+# Load the shared libraries [cite: 490, 512]
+lib_air = ctypes.CDLL(SENS_LIB_PATH)
+lib_data_handle = ctypes.CDLL(DATA_HANDLE_PATH)
 
-        # 2. Read Register: int rs485_read_raw(modbus_t *ctx, int slave_id, int reg_addr, uint16_t *out_value)
-        self.lib_air.rs485_read_raw.argtypes = [
-            ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_uint16)
-        ]
-        self.lib_air.rs485_read_raw.restype = ctypes.c_int
+# --- Define C Signatures (Stateless Functional Logic) ---
 
-        # 3. Close: void rs485_close(modbus_t *ctx)
-        self.lib_air.rs485_close.argtypes = [ctypes.c_void_p]
-        self.lib_air.rs485_close.restype = None
-        """
-            Data handle function signature:
-        """
-        #4. Calculate median: float calculate_median(float* values, int size)
-        self.lib_data_handle.calculate_median.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-        self.lib_data_handle.calculate_median.restype = ctypes.c_float 
+# RS485 initialization [cite: 351, 622]
+lib_air.rs485_init.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.c_char, ctypes.c_int, ctypes.c_int]
+lib_air.rs485_init.restype = ctypes.c_void_p
 
-        #5. Calculate average: float calculate_average(float* values, int size)
-        self.lib_data_handle.calculate_average.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
-        self.lib_data_handle.calculate_average.restype = ctypes.c_float
+# RS485 read raw register [cite: 566, 634]
+lib_air.rs485_read_raw.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_uint16)]
+lib_air.rs485_read_raw.restype = ctypes.c_int
 
-    def init_bus(self, device="/dev/ttyS0", baud=9600):
-        """
-        Wraps the C init function. Converts Python strings to C-style char pointers.
-        """
-        device_bytes = device.encode('utf-8')
-        ctx = self.lib_air.rs485_init(device_bytes, baud, b'N', 8, 1)
-        if not ctx:
-            print(f"Failed to initialize RS485 on {device}")
-        return ctx
+# RS485 close [cite: 883]
+lib_air.rs485_close.argtypes = [ctypes.c_void_p]
+lib_air.rs485_close.restype = None
 
-    def read_data(self, ctx, slave_id, address):
-        """
-        Wraps the C read function. Handles the pointer for the output value.
-        """
-        if not ctx:
-            return None
+# Math functions from data_handle [cite: 721, 1061]
+lib_data_handle.calculate_median.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+lib_data_handle.calculate_median.restype = ctypes.c_float
 
-        # Create the uint16 buffer for C to write into
-        raw_val = ctypes.c_uint16(0)
-        
-        # Pass by reference using ctypes.byref()
-        result = self.lib_air.rs485_read_raw(ctx, slave_id, address, ctypes.byref(raw_val))
-        
-        if result == 0:
-            return raw_val.value
+lib_data_handle.calculate_average.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.c_int]
+lib_data_handle.calculate_average.restype = ctypes.c_float
+
+# --- Exported Functions ---
+
+def init_bus(device="/dev/ttyS0", baud=9600):
+    """Initializes the RS485 bus via C library[cite: 353, 646]."""
+    device_bytes = device.encode('utf-8')
+    ctx = lib_air.rs485_init(device_bytes, baud, b'N', 8, 1)
+    return ctx
+
+def read_data(ctx, slave_id, address):
+    """Reads raw data from a Modbus slave[cite: 373, 622]."""
+    if not ctx:
         return None
+    raw_val = ctypes.c_uint16(0)
+    result = lib_air.rs485_read_raw(ctx, slave_id, address, ctypes.byref(raw_val))
+    return raw_val.value if result == 0 else None
 
-    def close_bus(self, ctx):
-        if ctx:
-            self.lib_air.rs485_close(ctx)
-    
-    def calculate_median(self, values):
-        """
-        Wraps the C median calculation function. Converts Python lists to C arrays.
-        """
-        size = len(values)
-        if size <= 0:
-            return 0.0
-        
-        # Create a C array of floats
-        c_array = (ctypes.c_float * size)(*values)
-        
-        # Call the C function
-        median = self.lib_data_handle.calculate_median(c_array, size)
-        return median
+def close_bus(ctx):
+    """Closes the Modbus context[cite: 890]."""
+    if ctx:
+        lib_air.rs485_close(ctx)
 
-    def calculate_average(self, values):
-        """
-        Wraps the C average calculation function. Converts Python lists to C arrays.
-        """
-        size = len(values)
-        if size <= 0:
-            return 0.0
+def calculate_median(values):
+    """Calculates median using the O(n log n) C library implementation[cite: 715, 716]."""
+    size = len(values)
+    if size <= 0: return 0.0
+    c_array = (ctypes.c_float * size)(*values)
+    return lib_data_handle.calculate_median(c_array, size)
 
-        # Create a C array of floats
-        c_array = (ctypes.c_float * size)(*values)
-
-        # Call the C function
-        average = self.lib_data_handle.calculate_average(c_array, size)
-        return average
+def calculate_average(values):
+    """Calculates moving average via C library[cite: 706, 712]."""
+    size = len(values)
+    if size <= 0: return 0.0
+    c_array = (ctypes.c_float * size)(*values)
+    return lib_data_handle.calculate_average(c_array, size)
