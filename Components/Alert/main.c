@@ -34,17 +34,19 @@ static void __attribute__((constructor)) _construction(void) {
         fprintf(stderr, "%s Failed to open chip\n", ERROR_LOG);
         abort();
     }
-
-    led_request = setup_pin(LED_PIN_OFFSET, "Alert-LED");
-    buzzer_request = setup_pin(BUZZER_PIN_OFFSET, "Alert-Buzzer");
-
-    if (!led_request || !buzzer_request) {
-        fprintf(stderr, "%s Failed to reserve GPIO pins\n", ERROR_LOG);
-        abort();
+    printf ("Open chip successfully");
+    info = gpiod_chip_get_info(chip);
+    if (!info) {
+	fprintf(stderr, "failed to read info: %s\n", strerror(errno));
+	abort();	
     }
 
-    printf("Alert C initialized: LED (BCM %d) and Buzzer (BCM %d) ready.\n", 
-            LED_PIN_OFFSET, BUZZER_PIN_OFFSET);
+    printf("%s [%s] (%zu lines)\n", gpiod_chip_info_get_name(info),
+    gpiod_chip_info_get_label(info),
+    gpiod_chip_info_get_num_lines(info));
+    gpiod_chip_info_free(info);
+
+    printf ("Get infor successfully");
 }
 
 static void __attribute__((destructor)) _deconstruction(void) {
@@ -71,3 +73,46 @@ static void __attribute__((destructor)) _deconstruction(void) {
 
 
 /*------------------------ Public Function -----------------------------*/
+void alert_init(uint8_t led, uint8_t buzzer){
+    led_pin = led;
+    buzzer_pin = buzzer;
+    led_request = setup_pin(led_pin, "Alert-LED");
+    buzzer_request = setup_pin(buzzer_pin, "Alert-Buzzer");
+
+    if (!led_request || !buzzer_request) {
+        fprintf(stderr, "%s Failed to reserve GPIO pins\n", ERROR_LOG);
+        abort();
+    }
+
+    printf("Alert C initialized: LED (BCM %d) and Buzzer (BCM %d) ready.\n", 
+            led_pin, buzzer_pin);
+}
+
+void alert_set_led(int state) {
+    if (!led_request) return;
+
+    enum gpiod_line_value value = state ? GPIOD_LINE_VALUE_ACTIVE : GPIOD_LINE_VALUE_INACTIVE;
+    gpiod_line_request_set_value(led_request, led_pin, value);
+}
+
+void alert_set_buzzer(int state) {
+    if (!buzzer_request) return;
+
+    enum gpiod_line_value value = state ? GPIOD_LINE_VALUE_ACTIVE : GPIOD_LINE_VALUE_INACTIVE;
+    gpiod_line_request_set_value(buzzer_request, buzzer_pin, value);
+}
+
+void alert_all_on(void) {
+    alert_set_led(1);
+    alert_set_buzzer(1);
+}
+
+int alert_get_led_state(void) {
+    if (!led_request) return -1;
+    return gpiod_line_request_get_value(led_request, led_pin);
+}
+
+int alert_get_buzzer_state(void) {
+	if (!buzzer_request) return -1;
+	return gpiod_line_request_get_value (buzzer_request, buzzer_pin);
+}

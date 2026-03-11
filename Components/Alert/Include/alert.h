@@ -6,15 +6,18 @@
 
 // Use macros for constants to avoid memory allocation in header
 #define CHIP_PATH "/dev/gpiochip0"
-#define LED_PIN_OFFSET 11    // BCM 11
-#define BUZZER_PIN_OFFSET 8  // BCM 8
 #define ERROR_LOG "[Error at alert library]"
+
+uint8_t led_pin = -1;
+uint8_t buzzer_pin = -1;
 // Extern declarations (Defined in alert.c)
 extern struct gpiod_chip* chip;
 extern struct gpiod_line_request* led_request;
 extern struct gpiod_line_request* buzzer_request;
 
 /*-------------------- Function declearation---------------------*/
+
+void alert_init (uint8_t led, uint8_t buzzer);
 /**
  * @brief Sets the state of the Alert LED.
  * * @param state 1 to turn the LED on (High), 0 to turn it off (Low).
@@ -32,6 +35,13 @@ void alert_set_buzzer(int state);
  * * @return 1 if High, 0 if Low, or -1 if the line is not initialized.
  */
 int alert_get_led_state(void);
+
+/**
+ * @brief Checks the current logical state of the BUZZER line.
+ * * @return 1 if High, 0 if Low, or -1 if the line is not initialized.
+ */
+int alert_get_buzzer_state(void);
+
 
 /**
  * @brief Immediately activates both the LED and the Buzzer.
