@@ -1,75 +1,78 @@
-# Raspberry Pi 4 Component Library: Lab Safety Monitoring System
+# LSMY Lab Safety Monitoring System - RS485 & Alert Subsystem
 
-This repository hosts the source code and documentation for the **System for Monitoring Environment and Safety in the Lab**, developed using a modular architecture for embedded systems (Raspberry Pi 4) and custom Linux kernel optimization via **Yocto Project**.
+This repository contains the source code for environmental monitoring and safety alert subsystems of the LSMY system. These components are specifically designed for cross-compilation via the Yocto Project and integration into the meta-lsmy layer.
 
-[cite_start]The goal is to provide a fast, secure, and resource-optimized solution leveraging **Edge AI** and **IoT**[cite: 6, 44].
+The system utilizes a modular, multi-threaded architecture to ensure real-time responsiveness for industrial sensors and safety hardware.
 
-## 💡 Project Architecture and Approach
+## System Architecture
 
-[cite_start]The system combines industrial sensors, a custom embedded operating system (Yocto), and Edge AI, managed by a centralized platform (CoreIoT)[cite: 44].
+The project is structured to separate low-level hardware communication from high-level application logic:
 
-### Key Components
+- **Hardware Interfacing**: Native C wrappers for high-speed RS485 Modbus RTU and GPIO-based alert modules.
+- **Process Management**: A Python-based manager that orchestrates sensor polling and alert checking in isolated threads.
+- **Inter-Process Communication (IPC)**: Synchronized data sharing via a centralized Global Store and Condition Variables (CV) for efficient, interrupt-like signaling.
 
-| Component                    | Function                                                                                                                          | Technology                                                                  |
-| :--------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------------------------------------------------- |
-| **Edge Computing (Gateway)** | [cite_start]Handles real-time processing, data correctness checks, human detection (AI), and local alerting[cite: 163, 166, 167]. | [cite_start]Custom Yocto OS, Embedded AI (TFLite/ONNX Runtime) [cite: 95]   |
-| **IoT End-Device**           | [cite_start]Collects raw environmental data (Temperature, Humidity, $CO_2$, VOC)[cite: 160, 36].                                  | [cite_start]Sensors (Modbus RS-485 likely) [cite: 38]                       |
-| **IoT Server**               | [cite_start]Centralized data storage, history analysis, dashboard display, and remote alerts for end-users[cite: 179, 181].       | [cite_start]CoreIoT Platform [cite: 44, 90]                                 |
-| **Human Safety**             | [cite_start]Uses computer vision models to count people and detect signs of fatigue or non-safe behavior[cite: 37, 103].          | [cite_start]Camera, Facial Analysis (EAR), Pose Estimation [cite: 108, 111] |
+## Project Structure
 
----
+| Directory         | Purpose                                                                |
+| :---------------- | :--------------------------------------------------------------------- |
+| **Python/**       | Main application logic including the Rs485_process_manager.py.         |
+| **Python/RS485/** | Sensor-specific classes (CO, PM2.5/PM10) and Modbus protocol handlers. |
+| **Python/Alert/** | Safety alert logic and threshold monitoring modules.                   |
+| **Components/**   | Native C source code for libalert and librs485 wrappers.               |
+| **rs485/**        | Low-level C implementations for Modbus communication.                  |
+| **Example/**      | Example for using library developed in Component.                      |
 
-## 📁 Project Structure
+## Integration with Yocto (meta-lsmy)
 
-The project is divided into **Components** (reusable libraries) and **Examples** (application entry points). This structure allows for easy integration of multiple languages (C/C++, Python) handled by CMake.
-| Directory | Purpose |
-| :--- | :--- |
-| **Components/Message_Passing/** | Core reusable library for POSIX Message Queue IPC. |
-| **Components/Message_Passing/Include/** | Header files for the Message_Passing component. |
-| **Example/Message_passing/** | A demonstration application to test the Message_Passing component. |
+These components are deployed to the Raspberry Pi 4 using custom Bitbake recipes within the meta-lsmy layer.
 
----
+### Building and Deployment
 
-## 🛠️ Building and Development
-
-The project uses an **out-of-source** build method via CMake, ensuring the source directory remains clean.
-
-### For C files
-
-#### Prerequisites
-
-- **Compiler Toolchain:** GCC/G++ or other required language compilers (e.g., Python environment for Edge AI models).
-- **CMake:** Version 3.28.3 or higher.
-- **System Libraries:** Dependencies like the POSIX real-time library (`-lrt`) are managed by the component's CMake file.
-
-#### Step 1: Build the Component Library
-
-Any required component library must be built first. This step creates the necessary library file (`.a` or `.so`) in the component's `build` directory.
+To build and deploy these components within your Yocto environment, use the provided automation scripts or devtool:
 
 ```bash
-# 1. Navigate to the desired component's build directory
-cd Components/<COMPONENT_NAME>/build
+# Using the custom automation script
+./build_deploy.sh rs485-app
 
-# 2. Configure CMake (Initial setup, finds source and dependencies)
-cmake ..
-
-# 3. Build the component library
-make
+# Manual devtool workflow
+devtool modify rs485-app
+devtool build rs485-app
+devtool deploy-target rs485-app root@<TARGET_IP>
 ```
 
-### Step 2: Build the Example Executable
+If you don't use yocto, you can use the component folder as library (Using Cmake, you can indicate use for navtive machine or cross machine.)
 
-The example application is built next, linking against the artifact created in Step 1.
+## Hardware Specifications
+
+- **Protocol**: Modbus RTU over RS485.
+
+- **Supported Sensors**: Carbon Monoxide (CO), Particulate Matter (PM2.5, PM10).
+
+- **Alert Output**: Visual and Audible indicators (LED/Buzzer) managed via libgpiod.
+
+## Manual Build (Without Yocto)
+
+If you are developing on a standard Linux distribution (Raspberry Pi OS, Ubuntu, etc.) without using Yocto, you can build the native C components manually using CMake.
+
+### Prerequisites
+
+- **Build Tools**: `gcc`, `g++`, `make`, `cmake` (version 3.28 or higher).
+- **System Libraries**: `libgpiod` (for Alert components), `libmodbus` (for rs485 components) and standard POSIX real-time libraries (`-lrt`).
+- **Python**: Python 3.12+ for running the application logic.
+
+### Building Native Components
+
+The project uses an out-of-source build approach. Each component in the `Components/` directory contains its own `CMakeLists.txt`.
 
 ```bash
-# 1. Navigate to the example's build directory
-cd ../../../Example/<EXAMPLE_NAME>/build
+# 1. Navigate to the component directory
+cd Components/<COMPONENT_NAME>
 
-# 2. Configure CMake (This resolves all component dependencies using GLOB)
+# 2. Create and enter build directory
+mkdir -p build && cd build
+
+# 3. Configure and compile
 cmake ..
-
-# 3. Build the example executable
 make
 ```
-
-### For python file (Will be added)
