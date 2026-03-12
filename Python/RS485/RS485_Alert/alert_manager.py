@@ -1,4 +1,4 @@
-import alert_wrapper 
+from . import alert_wrapper 
 import time
 from enum import Enum
 class AlertType(Enum):

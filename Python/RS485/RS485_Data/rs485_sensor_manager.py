@@ -1,4 +1,4 @@
-import rs485_wrapper as RS485Wrapper
+from . import rs485_wrapper as RS485Wrapper
 from collections import deque
 
 ## ------------ Register Addresses ------------##
@@ -61,17 +61,18 @@ class SensorDevice:
         """
         Virtual method to read raw values from the sensor. Can be overridden for specific sensors if needed.
         """
+        raw_value = []
         for i in range(self._num_values):
-            raw_value = RS485Wrapper.read_data(ctx, self._slave_id, self.register_data_address[i])
+            raw_value.append (RS485Wrapper.read_data(ctx, self._slave_id, self.register_data_address[i]))
         return raw_value
     
-    def process_raw_value(self, raw_value) -> float:
-        if raw_value is None:
+    def process_physical_value(self, physical_value):
+        if physical_value is None:
             return self.__last_clean_value
-
-        physical_value = self._raw_to_physical(raw_value) # Apply sensor-specific conversion
-        physical_value += self.__calibration_offset  # Apply calibration offset 
-
+        # Apply calibration offset
+        calibrated_value = physical_value + self.__calibration_offset
+        # Update moving average and median filtering
+        self._calculate_moving_average(calibrated_value)
         # Use median filtering to reject outliers
         median_value = self._calculate_median()
         self.__last_clean_value = median_value
@@ -89,8 +90,9 @@ class PMSensor(SensorDevice):
         super().__init__(slave_id, num_value=2, register_data_address=[PM25_CONCENTRATION_REGISTER_ADDRESS, PM10_CONCENTRATION_REGISTER_ADDRESS], register_config_address = [PM_SLAVEID_REGISTER_ADDRESS, PM_BAUDRATE_REGISTER_ADDRESS], name= name, unit= ["µg/m³", "µg/m³"])
 
     def _raw_to_physical(self, raw_value):
-        # Example conversion for PM2.5 sensor
-        return float(raw_value) * 0.1  # Placeholder conversion factor
+        # Example conversion for PM2.5 and PM10 sensors
+        raw_PM10, raw_PM2_5 = raw_value
+        return float(raw_PM2_5) * 0.1, float(raw_PM10) * 0.1  # Placeholder conversion factors
 
 class COSensor(SensorDevice):
     def __init__(self, slave_id, name):
