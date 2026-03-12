@@ -2,15 +2,15 @@ import threading
 import time
 import logging
 import random  # For simulating sensor data in testing
-from .RS485.rs485_sensor_manager import SensorManager, COSensor, PMSensor
-from .Alert.alert_manager import Alert, AlertType, check_and_trigger_alert, turn_off_alert
+from .RS485_Data.rs485_sensor_manager import SensorManager, COSensor, PMSensor
+from .RS485_Alert.alert_manager import Alert, AlertType, check_and_trigger_alert, turn_off_alert
 
 CO_SLAVE_ID_ADDRESS = 0x01  # Slave ID address for CO sensor
 PM_SLAVE_ID_ADDRESS = 0x24  # Slave ID address for PM sensor
 """
 This module defines the RS485ProcessManager class, which manages the RS485 sensor polling, data processing, and alerting logic. It runs as a separate process and contains internal threads for continuous sensor monitoring. The manager interacts with the SensorManager to read sensor data, applies filtering and calibration, updates a global store for inter-process communication, and checks alert conditions to trigger notifications. It also ensures clean shutdown of hardware resources and alerts when the process is terminated.
 """
-
+ 
 log = logging.getLogger("rs485-manager")
 
 class RS485ProcessManager:
@@ -43,10 +43,10 @@ class RS485ProcessManager:
         while not self._stop_event.is_set():
             try:
                 # 1. Read Raw Values and Convert to Physical Values
-                co_raw = self.co_sensor.read_raw_value(self.sensors._SensorManager__ctx)
+                # co_raw = self.co_sensor.read_raw_value(self.sensors._SensorManager__ctx)
                 pm_raw = self.pm_sensor.read_raw_value(self.sensors._SensorManager__ctx)
                 log.debug(f"Raw CO: {co_raw}, Raw PM2.5: {pm_raw[0]}, Raw PM10: {pm_raw[1]}")
-                # co_raw = random.uniform(0, 100)  # Simulated raw value for testing
+                co_raw = random.uniform(0, 100)  # Simulated raw value for testing
                 # pm_raw = [random.uniform(0, 100), random.uniform(0, 100)]  # Simulated raw value for testing
                 co_physical = self.co_sensor._raw_to_physical(co_raw)
                 pm_2_5_physical, pm_10_physical = self.pm_sensor._raw_to_physical(pm_raw)
